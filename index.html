@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MRTPO: Each Reward to Its Relevant Tokens — Reward-Specific Token-Level Credit Assignment for Multi-Reward RL</title>
+  <meta name="description" content="MRTPO assigns each reward's advantage to the tokens relevant to it. The policy replays its own response with and without each reward's verifier information; the per-token Jensen–Shannon distance decides where that reward's advantage goes.">
+  <meta property="og:title" content="Each Reward to Its Relevant Tokens: Reward-Specific Token-Level Credit Assignment for Multi-Reward RL">
+  <meta property="og:description" content="GDPO tells a multi-reward learner which rewards a response earned. MRTPO also tells it which tokens earned each of them.">
+  <meta property="og:image" content="static/img/og_preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="static/css/style.css">
+  <script defer src="static/js/main.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">MRTPO</a>
+    <a class="nl" href="#problem">Problem</a>
+    <a class="nl" href="#method">Method</a>
+    <a class="nl" href="#results">Results</a>
+    <a class="nl" href="#faster">Faster learning</a>
+    <a class="nl" href="#credit">Where the credit goes</a>
+    <a class="nl" href="#own-task">Your own task</a>
+    <a class="nl" href="#bibtex">BibTeX</a>
+  </div>
+</nav>
+
+<!-- ================= HERO ================= -->
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="kicker">MRTPO · Multi-Reward-to-Token Policy Optimization</div>
+    <h1>Each Reward to Its Relevant Tokens</h1>
+    <p class="subtitle">Reward-Specific Token-Level Credit Assignment for Multi-Reward RL</p>
+
+    <div class="authors">
+      <span><a href="https://skylarrrzhai.com" target="_blank" rel="noopener">Skylar Zhai</a><sup>1</sup></span>
+      <span><a href="https://haonan3.github.io/" target="_blank" rel="noopener">Haonan Wang</a><sup>2</sup></span>
+      <span><a href="https://zhiningliu.com/" target="_blank" rel="noopener">Zhining Liu</a><sup>3</sup></span>
+      <span><a href="https://linxins.net/" target="_blank" rel="noopener">Linxin Song</a><sup>4</sup></span>
+      <span><a href="https://xuweid.com/" target="_blank" rel="noopener">Xuwei Ding</a><sup>5</sup></span>
+      <span><a href="https://leo-leung04.github.io/" target="_blank" rel="noopener">Jingcheng Liang</a><sup>1</sup></span>
+      <span><a href="https://jiank2.github.io/" target="_blank" rel="noopener">Jian Kang</a><sup>6</sup></span>
+    </div>
+    <div class="affils">
+      <span><sup>1</sup>University of Minnesota</span>
+      <span><sup>2</sup>National University of Singapore</span>
+      <span><sup>3</sup>University of Illinois Urbana-Champaign</span>
+      <span><sup>4</sup>University of Southern California</span>
+      <span><sup>5</sup>University of Pennsylvania</span>
+      <span><sup>6</sup>Mohamed bin Zayed University of Artificial Intelligence</span>
+    </div>
+
+    <div class="links">
+      <a class="btn" href="https://github.com/zhaihaotian/MRTPO" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg> Code</a>
+    </div>
+
+    <div class="tldr">
+      <span class="k">TL;DR</span>
+      GDPO tells a multi-reward learner <b>which rewards</b> a response earned; MRTPO also tells it <b>which tokens</b> earned
+      each of them. For each reward, the policy replays its own response with and without that reward's verifier information,
+      and the per-token Jensen–Shannon distance between the two next-token distributions decides where that reward's advantage
+      goes. No auxiliary model, no token labels, no extra generation.
+    </div>
+
+    <div class="figures-row">
+      <div><div class="n">6 / 6</div><div class="l">models with the best average, across text-to-SQL, instruction following and tool calling</div></div>
+      <div><div class="n">97% vs 2%</div><div class="l">BFCL cases in the required tool-call format after 10 training steps, MRTPO vs GDPO</div></div>
+      <div><div class="n">40%</div><div class="l">shorter text-to-SQL responses than GDPO's (Qwen2.5-Coder-3B)</div></div>
+      <div><div class="n">0</div><div class="l">auxiliary models, token labels or extra generations</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= PROBLEM ================= -->
+<section id="problem">
+  <div class="wrap">
+    <div class="label">01 · The problem</div>
+    <h2>🎯 One wrong token, and the penalty lands everywhere</h2>
+    <p class="lead">
+      Language models are increasingly trained against several verifiable rewards at once: the correctness and the format of a tool
+      call, or the individual constraints of a complex instruction. GDPO normalizes each reward separately, so different reward
+      combinations keep distinct advantages. But in GRPO, GDPO and SAW, <b>every token of a response shares one advantage</b>.
+    </p>
+    <p class="lead">
+      A verifier checks only a few positions. The penalty for one wrong token is spread over the whole response, where it can be
+      outweighed by the credit other rewards put on the same tokens.
+    </p>
+    <figure>
+      <img src="static/figures/fig1.svg" alt="One SQL response scored by three rewards; GDPO, SAW, OPSD and MRTPO place the credit differently">
+      <figcaption>One SQL response that is well formed and executable but uses <code>&gt;=</code> for <code>&gt;</code>.
+        GDPO and SAW put each reward's advantage on every token; OPSD pulls toward a teacher; MRTPO puts format credit on the tags,
+        executability credit on the query, and the execution penalty mostly on <code>&gt;= 30</code>.</figcaption>
+    </figure>
+
+    <figure class="narrow">
+      <img src="static/figures/fig_sqlcredit.svg" alt="GDPO vs MRTPO per-token advantage on a text-to-SQL response">
+      <figcaption>Per-token advantage on a response that returns the city's ID instead of its name. GDPO spreads every reward
+        evenly; MRTPO puts the execution penalty on <code>Host</code>.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ================= METHOD ================= -->
+<section id="method">
+  <div class="wrap">
+    <div class="label">02 · Method</div>
+    <h2>💡 Let each verifier's information point to its tokens</h2>
+    <p class="lead">
+      MRTPO assigns the advantage of each reward to the tokens relevant to it, using the information its verifier checks.
+    </p>
+
+    <ol class="steps">
+      <li>
+        <h4>Write each verifier's information as a text block</h4>
+        <p>\(Z_k\) is what reward \(k\) checks: the format rule, the response's own SQLite error, the reference query, or one
+          constraint of the instruction. \(P_{\text{all}} = P_0 \oplus\) all blocks; \(P_{\setminus k}\) leaves out \(Z_k\).
+          When the information is already in the prompt (instruction constraints), \(P_{\text{all}}\) is the prompt and
+          \(P_{\setminus k}\) removes one constraint. Sampling still uses \(P_0\).</p>
+      </li>
+      <li>
+        <h4>Replay the response under both contexts</h4>
+        <p>The sampling policy reads its own response once under each context, one forward pass per context, with no new
+          generation. At every token \(t\), the Jensen–Shannon distance \(q_{k,t}\) between the two next-token distributions
+          measures how relevant that token is to reward \(k\).</p>
+      </li>
+      <li>
+        <h4>Move each reward's advantage to its tokens</h4>
+        <p>The distances become per-token weights, and each token's advantage is the weighted sum over rewards. The weights
+          average to 1 per response, so every response keeps its GDPO credit; only the placement changes.</p>
+      </li>
+    </ol>
+
+    <div class="eq">
+      \[
+        q_{k,t}=\sqrt{\frac{\mathrm{JS}\!\left(p^{\text{all}}_t \,\middle\|\, p^{\setminus k}_t\right)}{\ln 2}}
+        \qquad
+        w_{k,t}=(1-\beta)+\beta\,\frac{q_{k,t}}{\bar q_k}
+        \qquad
+        S_t=\sum_k A_k\, w_{k,t}
+      \]
+      <div class="note">\(A_k\): GDPO's group-normalized advantage of reward \(k\) for the response; \(\bar q_k\): mean of
+        \(q_{k,t}\) over the response; \(\beta = 0.5\). \(S_t\) is then divided by GDPO's batch standard deviation.</div>
+    </div>
+
+    <figure>
+      <img src="static/figures/fig_replay_sql.svg" alt="Replay of a text-to-SQL response under the full context and with each verifier block removed">
+      <figcaption>Self-replay on a text-to-SQL response that reads table <code>telefone</code>, which does not exist. Each replay
+        removes one verifier block; the shading shows where that reward's advantage goes.</figcaption>
+    </figure>
+
+    <h3>What changes compared with GDPO</h3>
+    <div class="tbl"><table class="methods">
+<thead><tr><th>Method</th><th>What changes in the GDPO step</th><th>Token advantage \(S_t^{(j)}\)</th></tr></thead>
+<tbody>
+<tr><td>GDPO</td><td>nothing; the per-reward advantages are summed</td><td>\(\sum_k A_k^{(j)}\)<span class="all">for all \(t\)</span></td></tr>
+<tr><td>SAW</td><td>each reward is weighted by its coefficient of variation in the batch</td><td>\(\sum_k \lambda_k A_k^{(j)}\)<span class="all">for all \(t\)</span></td></tr>
+<tr><td>DARA</td><td>rewards that vary in fewer groups get a larger, capped weight on their positive advantages</td><td>\(\sum_k \bigl(A_k^{(j)} + (\lambda_k - 1)[A_k^{(j)}]_+\bigr)\)<span class="all">for all \(t\)</span></td></tr>
+<tr><td>DVAO</td><td>each reward is weighted by its standard deviation within the group, normalized across rewards</td><td>\(\sum_k \lambda_k A_k^{(j)}\)<span class="all">for all \(t\)</span></td></tr>
+<tr><td>SA-MRPO</td><td>each reward is discounted by how saturated it is in the batch</td><td>\(\sum_k \lambda_k A_k^{(j)}\)<span class="all">for all \(t\)</span></td></tr>
+<tr><td>GD²PO</td><td>responses whose per-reward advantages disagree in sign are dropped, and each prompt is scaled by its share of kept responses</td><td>\(\kappa\,\delta^{(j)} \sum_k A_k^{(j)}\)<span class="all">for all \(t\)</span></td></tr>
+<tr><td>RVPO</td><td>the rewards are combined by a soft minimum, which penalizes their variance</td><td>\(\operatorname{softmin}_k A_k^{(j)}\)<span class="all">for all \(t\)</span></td></tr>
+<tr class="ours"><td>MRTPO</td><td>each reward's advantage is assigned to tokens by relevance</td><td>\(\sum_k A_k^{(j)}\, w_{k,t}\)</td></tr>
+</tbody></table></div>
+    <p class="note">The other methods act on the response, so every token of a response gets the same advantage. MRTPO sets a
+      weight per reward and token and can be combined with them.</p>
+
+    <div class="algo">
+      <div class="col">
+        <div class="ttl">GDPO step</div>
+        <ol>
+          <li>Sample a group of responses from \(P_0\) and score every reward</li>
+          <li>Normalize each reward within the group: \(A_k\)</li>
+          <li>Sum the rewards: \(S=\sum_k A_k\), the same on every token</li>
+          <li>Divide by the batch standard deviation and update the policy</li>
+        </ol>
+      </div>
+      <div class="col ours">
+        <div class="ttl">MRTPO step</div>
+        <ol>
+          <li>Sample a group of responses from \(P_0\) and score every reward</li>
+          <li>Normalize each reward within the group: \(A_k\)</li>
+          <li class="add">For each reward \(k\), find its relevant tokens: replay \(y\) after \(P_{\text{all}}\) and after
+            \(P_{\setminus k}\); \(q_{k,t}\) = JS distance of the two predictions;
+            \(w_{k,t}=(1-\beta)+\beta\,q_{k,t}/\bar q_k\)</li>
+          <li class="add">Sum the rewards on each token: \(S_t=\sum_k A_k\, w_{k,t}\)</li>
+          <li>Divide by the batch standard deviation and update the policy</li>
+        </ol>
+      </div>
+    </div>
+
+
+    <div class="inline-note"><span class="ic">Cost</span><span>A training step takes <b>10–20% longer</b> than GDPO. Replay only
+      runs for rewards that vary within the group, so only <b>12–21%</b> of response–reward pairs need one.</span></div>
+  </div>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="results">
+  <div class="wrap">
+    <div class="label">03 · Results</div>
+    <h2>📊 Best average on all three tasks and all six models</h2>
+
+    <h3>Text-to-SQL</h3>
+    <div class="tbl"><table>
+<thead><tr><th rowspan="2">Method</th><th colspan="5" class="span">Spider</th><th class="span">BIRD</th><th rowspan="2">Avg.</th></tr>
+<tr><th>Dev</th><th>Test</th><th>Syn</th><th>Realistic</th><th>DK</th><th>Dev</th></tr></thead>
+<tbody>
+<tr class="blk"><td colspan="8">Qwen2.5-Coder-3B-Instruct</td></tr>
+<tr><td>Base</td><td>62.38</td><td>64.46</td><td>53.00</td><td>54.72</td><td>51.87</td><td>36.88</td><td>53.88</td></tr>
+<tr><td>GRPO</td><td>74.24<span class="sd">±1.26</span></td><td>75.00<span class="sd">±0.31</span></td><td>65.92<span class="sd">±1.50</span></td><td>69.49<span class="sd">±1.94</span></td><td>64.04<span class="sd">±1.69</span></td><td>43.54<span class="sd">±1.03</span></td><td>65.37<span class="sd">±1.18</span></td></tr>
+<tr><td>GDPO</td><td>76.66<span class="sd">±2.21</span></td><td>76.40<span class="sd">±1.17</span></td><td>67.34<span class="sd">±1.82</span></td><td>70.80<span class="sd">±1.94</span></td><td>65.61<span class="sd">±0.93</span></td><td><b>47.13</b><span class="sd">±1.94</span></td><td>67.32<span class="sd">±1.66</span></td></tr>
+<tr><td>OPSD</td><td>68.18<span class="sd">±0.61</span></td><td>69.34<span class="sd">±0.45</span></td><td>59.15<span class="sd">±0.39</span></td><td>62.14<span class="sd">±1.38</span></td><td>56.12<span class="sd">±0.96</span></td><td>39.21<span class="sd">±0.70</span></td><td>59.02<span class="sd">±0.49</span></td></tr>
+<tr class="ours"><td>MRTPO</td><td>78.24<span class="sd">±0.44</span></td><td>76.79<span class="sd">±0.43</span></td><td>68.67<span class="sd">±0.86</span></td><td><b>73.49</b><span class="sd">±0.61</span></td><td><b>68.17</b><span class="sd">±1.53</span></td><td>46.26<span class="sd">±0.87</span></td><td>68.60<span class="sd">±0.15</span></td></tr>
+<tr class="rule"><td>GDPO+SAW</td><td>74.63<span class="sd">±0.06</span></td><td>74.77<span class="sd">±0.86</span></td><td>65.60<span class="sd">±1.03</span></td><td>70.60<span class="sd">±2.08</span></td><td>64.67<span class="sd">±0.58</span></td><td>45.23<span class="sd">±1.28</span></td><td>65.92<span class="sd">±0.93</span></td></tr>
+<tr class="ours"><td>MRTPO+SAW</td><td><b>78.88</b><span class="sd">±0.44</span></td><td><b>77.67</b><span class="sd">±0.23</span></td><td><b>68.86</b><span class="sd">±0.54</span></td><td><b>73.49</b><span class="sd">±0.57</span></td><td>67.92<span class="sd">±0.66</span></td><td>46.95<span class="sd">±0.93</span></td><td><b>68.96</b><span class="sd">±0.19</span></td></tr>
+<tr class="blk"><td colspan="8">Qwen2.5-Coder-7B-Instruct</td></tr>
+<tr><td>Base</td><td>77.18</td><td>77.55</td><td>68.67</td><td>73.62</td><td>67.04</td><td>51.63</td><td>69.28</td></tr>
+<tr><td>GRPO</td><td>78.30<span class="sd">±0.78</span></td><td>81.03<span class="sd">±0.49</span></td><td>71.44<span class="sd">±0.44</span></td><td>73.89<span class="sd">±0.79</span></td><td>66.91<span class="sd">±0.66</span></td><td>54.00<span class="sd">±0.63</span></td><td>70.93<span class="sd">±0.32</span></td></tr>
+<tr><td>GDPO</td><td>79.21<span class="sd">±0.68</span></td><td>80.62<span class="sd">±0.49</span></td><td>72.21<span class="sd">±0.73</span></td><td>74.87<span class="sd">±0.82</span></td><td>67.29<span class="sd">±0.54</span></td><td>55.11<span class="sd">±1.26</span></td><td>71.55<span class="sd">±0.27</span></td></tr>
+<tr><td>OPSD</td><td>79.11<span class="sd">±0.44</span></td><td>80.39<span class="sd">±0.52</span></td><td>70.76<span class="sd">±1.45</span></td><td>75.72<span class="sd">±0.97</span></td><td>69.10<span class="sd">±0.49</span></td><td>53.87<span class="sd">±0.36</span></td><td>71.49<span class="sd">±0.54</span></td></tr>
+<tr class="ours"><td>MRTPO</td><td><b>81.33</b><span class="sd">±0.42</span></td><td><b>81.65</b><span class="sd">±0.45</span></td><td><b>73.53</b><span class="sd">±0.48</span></td><td>75.92<span class="sd">±1.78</span></td><td><b>70.04</b><span class="sd">±1.79</span></td><td>56.42<span class="sd">±0.46</span></td><td>73.15<span class="sd">±0.19</span></td></tr>
+<tr class="rule"><td>GDPO+SAW</td><td>79.92<span class="sd">±0.46</span></td><td>81.32<span class="sd">±0.47</span></td><td>72.24<span class="sd">±0.98</span></td><td>76.31<span class="sd">±0.12</span></td><td>68.23<span class="sd">±1.56</span></td><td>55.44<span class="sd">±1.18</span></td><td>72.24<span class="sd">±0.35</span></td></tr>
+<tr class="ours"><td>MRTPO+SAW</td><td>81.08<span class="sd">±0.31</span></td><td>81.39<span class="sd">±0.15</span></td><td>73.21<span class="sd">±1.12</span></td><td><b>77.23</b><span class="sd">±0.99</span></td><td><b>70.04</b><span class="sd">±0.19</span></td><td><b>57.53</b><span class="sd">±0.32</span></td><td><b>73.41</b><span class="sd">±0.35</span></td></tr>
+</tbody></table></div>
+    <p class="note">Execution accuracy (%), mean ± standard deviation over 3 seeds.</p>
+
+    <h3>Instruction following</h3>
+    <div class="tbl"><table>
+<thead><tr><th rowspan="2">Method</th><th colspan="2" class="span">IFEval</th><th colspan="2" class="span">IFBench</th><th class="span">MulDimIF</th><th colspan="2" class="span">AdvancedIF</th><th rowspan="2">Avg.</th></tr>
+<tr><th>Prompt</th><th>Inst.</th><th>Prompt</th><th>Inst.</th><th>Acc.</th><th>Overall</th><th>Rubric</th></tr></thead>
+<tbody>
+<tr class="blk"><td colspan="9">Qwen3-4B-Instruct-2507</td></tr>
+<tr><td>Instruct</td><td>83.77</td><td>88.82</td><td>30.95</td><td>33.13</td><td>56.50</td><td>38.21</td><td>76.41</td><td>58.26</td></tr>
+<tr><td>GRPO</td><td>85.44<span class="sd">±0.15</span></td><td>90.16<span class="sd">±0.06</span></td><td>35.68<span class="sd">±1.02</span></td><td>37.79<span class="sd">±1.01</span></td><td>62.44<span class="sd">±0.86</span></td><td>39.27<span class="sd">±0.27</span></td><td>77.06<span class="sd">±0.12</span></td><td>61.12<span class="sd">±0.34</span></td></tr>
+<tr><td>CoRT</td><td>85.37<span class="sd">±0.50</span></td><td>90.06<span class="sd">±0.31</span></td><td>34.74<span class="sd">±1.90</span></td><td>36.85<span class="sd">±1.95</span></td><td>63.00<span class="sd">±1.35</span></td><td>38.88<span class="sd">±0.39</span></td><td>76.95<span class="sd">±0.44</span></td><td>60.84<span class="sd">±0.78</span></td></tr>
+<tr><td>GDPO</td><td>85.52<span class="sd">±0.52</span></td><td>90.23<span class="sd">±0.33</span></td><td>36.39<span class="sd">±1.59</span></td><td>38.84<span class="sd">±1.18</span></td><td>62.88<span class="sd">±2.83</span></td><td>38.91<span class="sd">±0.43</span></td><td>76.85<span class="sd">±0.21</span></td><td>61.37<span class="sd">±0.77</span></td></tr>
+<tr class="ours"><td>MRTPO</td><td><b>85.66</b><span class="sd">±1.20</span></td><td><b>90.40</b><span class="sd">±0.74</span></td><td><b>38.76</b><span class="sd">±1.53</span></td><td><b>40.92</b><span class="sd">±1.33</span></td><td><b>65.37</b><span class="sd">±1.33</span></td><td><b>39.39</b><span class="sd">±0.61</span></td><td><b>77.25</b><span class="sd">±0.15</span></td><td><b>62.54</b><span class="sd">±0.32</span></td></tr>
+<tr class="blk"><td colspan="9">Qwen2.5-7B-Instruct</td></tr>
+<tr><td>Instruct</td><td>72.09</td><td>79.50</td><td>26.53</td><td>29.37</td><td>50.77</td><td>23.51</td><td>69.26</td><td>50.15</td></tr>
+<tr><td>GRPO</td><td>81.72<span class="sd">±0.31</span></td><td>87.42<span class="sd">±0.16</span></td><td>35.94<span class="sd">±2.06</span></td><td>38.43<span class="sd">±2.05</span></td><td>55.19<span class="sd">±0.77</span></td><td>25.98<span class="sd">±0.56</span></td><td>71.08<span class="sd">±0.24</span></td><td>56.54<span class="sd">±0.62</span></td></tr>
+<tr><td>CoRT</td><td>81.32<span class="sd">±0.56</span></td><td>87.11<span class="sd">±0.40</span></td><td>35.68<span class="sd">±1.57</span></td><td>38.22<span class="sd">±1.73</span></td><td>55.05<span class="sd">±0.30</span></td><td>26.07<span class="sd">±0.76</span></td><td>71.11<span class="sd">±0.37</span></td><td>56.36<span class="sd">±0.55</span></td></tr>
+<tr><td>GDPO</td><td>81.91<span class="sd">±1.30</span></td><td><b>87.58</b><span class="sd">±0.94</span></td><td>35.70<span class="sd">±2.63</span></td><td>38.57<span class="sd">±3.25</span></td><td><b>55.33</b><span class="sd">±1.58</span></td><td>26.13<span class="sd">±0.90</span></td><td><b>71.46</b><span class="sd">±0.25</span></td><td>56.67<span class="sd">±0.77</span></td></tr>
+<tr class="ours"><td>MRTPO</td><td><b>81.98</b><span class="sd">±0.78</span></td><td>87.57<span class="sd">±0.60</span></td><td><b>38.87</b><span class="sd">±1.96</span></td><td><b>42.00</b><span class="sd">±2.60</span></td><td>53.50<span class="sd">±1.72</span></td><td><b>26.18</b><span class="sd">±0.52</span></td><td>71.44<span class="sd">±0.33</span></td><td><b>57.36</b><span class="sd">±0.63</span></td></tr>
+</tbody></table></div>
+    <p class="note">Accuracy (%), mean ± standard deviation over seeds. The largest gains are on IFBench, whose constraints are not
+      seen in training.</p>
+
+    <h3>Tool calling</h3>
+    <div style="max-width:680px">
+    <div class="tbl"><table>
+<thead><tr><th rowspan="2">Method</th><th colspan="2" class="span">Qwen2.5-1.5B</th><th colspan="2" class="span">Qwen2.5-3B</th></tr>
+<tr><th>Non-Live</th><th>Live</th><th>Non-Live</th><th>Live</th></tr></thead>
+<tbody>
+<tr><td>Base</td><td>12.06</td><td>9.33</td><td>36.23</td><td>47.67</td></tr>
+<tr><td>GRPO</td><td>78.04<span class="sd">±0.84</span></td><td>64.80<span class="sd">±0.55</span></td><td>81.81<span class="sd">±0.76</span></td><td>69.31<span class="sd">±0.11</span></td></tr>
+<tr><td>GDPO</td><td>79.30<span class="sd">±1.69</span></td><td>67.05<span class="sd">±2.40</span></td><td>82.42<span class="sd">±0.50</span></td><td>68.86<span class="sd">±0.41</span></td></tr>
+<tr class="ours"><td>MRTPO</td><td><b>80.05</b><span class="sd">±1.00</span></td><td><b>68.66</b><span class="sd">±0.92</span></td><td><b>82.55</b><span class="sd">±1.17</span></td><td><b>69.58</b><span class="sd">±0.66</span></td></tr>
+</tbody></table></div>
+    </div>
+    <p class="note">BFCL-v4 single-turn AST accuracy (%), Non-Live and Live overall, mean ± standard deviation over seeds.</p>
+  </div>
+</section>
+
+<!-- ================= FASTER LEARNING ================= -->
+<section id="faster">
+  <div class="wrap">
+    <div class="label">04 · Training dynamics</div>
+    <h2>⚡ MRTPO learns faster</h2>
+
+    <div class="strip">
+      <div><div class="n">97%</div><div class="l">BFCL cases in the required tool-call format after 10 training steps, vs 2% for GDPO and 4% for GRPO</div></div>
+      <div><div class="n">13 steps</div><div class="l">median to a format reward of 0.8, vs 19 for GDPO and 34 for GRPO</div></div>
+      <div><div class="n">60 / 100</div><div class="l">steps for Coder-7B to pass GDPO's final text-to-SQL accuracy</div></div>
+      <div><div class="n">200 / 300</div><div class="l">steps for Qwen3-4B to pass every baseline's final IFBench accuracy</div></div>
+    </div>
+
+    <figure>
+      <img src="static/figures/toolcall_train_bfcl.svg" alt="Tool calling over training: train format and correctness reward, BFCL accuracy and format">
+      <figcaption>Tool calling: training format and correctness reward, and BFCL accuracy and format, over training.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="static/figures/takeoff.svg" alt="Text-to-SQL accuracy and response length, IFBench and MulDimIF over training">
+      <figcaption>Text-to-SQL accuracy and response length; IFBench and MulDimIF accuracy over training. Text-to-SQL responses
+        become <b>40% shorter</b> than GDPO's with Coder-3B.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ================= CREDIT ================= -->
+<section id="credit">
+  <div class="wrap">
+    <div class="label">05 · Analysis</div>
+    <h2>🔍 Where the credit goes</h2>
+    <p class="lead">
+      Each reward's distance concentrates on a small part of the response. In text-to-SQL, <b>80%</b> of a reward's distance falls
+      on <b>26–29%</b> of the tokens; in tool calling, on <b>13–15%</b>. In instruction following, an end-phrase constraint puts
+      <b>40%</b> of its distance on <b>4%</b> of the tokens: the phrase itself.
+    </p>
+    <figure>
+      <img src="static/figures/credit_analysis.svg" alt="Concentration of the Jensen–Shannon distance and its share by response region, for text-to-SQL and tool calling">
+      <figcaption>Share of each reward's distance on the top tokens, and on each region of the response, for text-to-SQL and tool
+        calling. GDPO's uniform split is shown for reference.</figcaption>
+    </figure>
+
+    <h3>Tool calling</h3>
+    <figure>
+      <img src="static/figures/fig_replay_tool.svg" alt="Replay of a tool-calling response without the correctness block and without the format block">
+      <figcaption>Self-replay on a tool-calling response with a correctness block and a format block.</figcaption>
+    </figure>
+
+    <h3>Instruction following</h3>
+    <figure>
+      <img src="static/figures/fig2.svg" alt="Replay of an instruction-following response with 12 constraints, one reward each">
+      <figcaption>Self-replay on an instruction with 12 constraints, one reward each. Each replay removes one constraint from the
+        prompt.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ================= OWN TASK ================= -->
+<section id="own-task">
+  <div class="wrap">
+    <div class="label">06 · Practice</div>
+    <h2>🧪 Using MRTPO on your own task</h2>
+    <p class="lead">MRTPO needs two things from a task:</p>
+    <div class="two">
+      <div class="card">
+        <div class="tag">1 · Rewards</div>
+        <p><b>A vector of rewards</b>, each scored by its own verifier, as in GDPO.</p>
+      </div>
+      <div class="card">
+        <div class="tag">2 · Verifier blocks</div>
+        <p><b>For every reward, a text block that carries the information its verifier uses.</b> The two replay contexts differ
+          only in this block, so the block decides which tokens receive the reward's advantage.</p>
+      </div>
+    </div>
+
+    <h3>Building the two contexts</h3>
+    <p>For each reward \(k\) the replay compares \(P_{\text{all}}\), which contains the blocks of all rewards, with
+      \(P_{\setminus k}\), the same context with block \(k\) removed.</p>
+    <div class="two">
+      <div class="card">
+        <div class="tag">The prompt does not show it</div>
+        <p>Tool calling, text-to-SQL. The verifier holds information the policy never sees while sampling: the reference calls, the
+          reference query, the response's own SQLite error. Write each piece as a block and append the blocks to the rollout prompt
+          \(P_0\): \(P_{\text{all}} = P_0\) + all blocks, \(P_{\setminus k} = P_0\) + all blocks except block \(k\). The rollout
+          itself still uses \(P_0\).</p>
+      </div>
+      <div class="card">
+        <div class="tag">The prompt already shows it</div>
+        <p>Instruction following. Every constraint the verifiers check is part of the instruction, so the rollout prompt is
+          already \(P_{\text{all}}\). Nothing is added; \(P_{\setminus k}\) is the rollout prompt with constraint \(k\)
+          deleted.</p>
+      </div>
+    </div>
+
+    <h3>Writing a block</h3>
+    <ul class="rules">
+      <li><b>One reward, one block.</b> Never merge several constraints, rubric items or verifiers into one.</li>
+      <li><b>Write the information itself, specific to this example.</b> Build every block by code from the example's label or
+        the verifier's own output; a generic requirement ("the query must execute") carries no information.</li>
+      <li><b>Write it as a plain statement, like the rest of the prompt.</b> No instructions to the model, headings, labels, or
+        words about training, replay or scoring.</li>
+      <li><b>Use only this response's own feedback.</b> If there is none, the block is empty; never invent one.</li>
+      <li><b>Write references in the form the policy is asked to produce</b>, with the same tags, code fences and argument types.</li>
+      <li><b>Keep the prompt, the rewards and the blocks consistent</b>, and replay the rollout prompt and the response exactly as
+        sampled.</li>
+    </ul>
+
+    <div class="two" style="margin-top:28px">
+      <div class="card">
+        <div class="tag">Which rewards fit</div>
+        <p>MRTPO helps when a reward's information, written as text, changes what the policy would write at the positions its
+          verifier reads: a tool name and its arguments, a table or column, a required phrase. In math reasoning, the answer block
+          points only at the last number, and a length limit is not decided by particular tokens. We did not evaluate MRTPO on math
+          answer and length rewards or on GDPO's coding rewards.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Hyperparameters</div>
+        <p>β = 0.5 works in all our settings and is a good default; some tasks may prefer a smaller β. The reallocation bound keeps
+          long training runs stable, so we use it in all settings. For short training, MRTPO without the bound also works well
+          (<code>--no-reallocation-bound</code>).</p>
+      </div>
+    </div>
+
+    <div class="inline-note"><span class="ic">Before training</span><span><code>replay_viz/</code> replays responses of the base
+      model under your blocks and draws each reward's token weights. If you are unsure whether a block works, look at a few
+      responses there first. Full guide: <a href="https://github.com/zhaihaotian/MRTPO#-using-mrtpo-on-your-own-task"
+      target="_blank" rel="noopener">the README on GitHub</a>.</span></div>
+  </div>
+</section>
+
+<!-- ================= BIBTEX ================= -->
+<section id="bibtex">
+  <div class="wrap">
+    <div class="label">Citation</div>
+    <h2>BibTeX</h2>
+    <div class="bib">
+      <button class="copy" id="copy-bib">Copy</button>
+<pre id="bibtex-text">@article{zhai2026mrtpo,
+  title={Each Reward to Its Relevant Tokens: Reward-Specific Token-Level
+         Credit Assignment for Multi-Reward RL},
+  author={Zhai, Skylar and Wang, Haonan and Liu, Zhining and Song, Linxin and
+          Ding, Xuwei and Liang, Jingcheng and Kang, Jian},
+  year={2026}
+}</pre>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">MRTPO · Each Reward to Its Relevant Tokens: Reward-Specific Token-Level Credit Assignment for Multi-Reward RL</div>
+</footer>
+
+</body>
+</html>
