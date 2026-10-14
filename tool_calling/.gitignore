@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.dependencies/
+outputs/
+eval/
+checkpoints/
+wandb/
+*.log
+data/

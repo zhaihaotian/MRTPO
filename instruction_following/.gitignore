@@ -1,0 +1,6 @@
+data/raw/
+data/hir_if/
+evaluation/advancedif/AdvancedIF/
+evaluation/advancedif/data/
+runs/
+eval/

@@ -1,0 +1,38 @@
+{
+  "name": "Instruction following: HIR-16K-style prompt with six constraints",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What are the key features of a well-designed website?\n\n- There should be 2 paragraphs. Paragraphs are separated with the markdown divider: ***\n- Your response should contain at least 3 bullet points. Use the markdown bullet points such as: * This is point 1.\n- Highlight at least 2 sections in your answer with markdown, i.e. *highlighted section*.\n- In your response, the word *design* should appear at least 2 times.\n- Do not include keywords *layout* in the response.\n- Finish your response with this exact phrase *Is there anything else I can help with?* No other words should follow this phrase."
+    }
+  ],
+  "rewards": [
+    {
+      "name": "There should be 2 paragraphs. Paragraphs are separated with the markdown divider: ***",
+      "minus_prompt": "What are the key features of a well-designed website?\n\n- Your response should contain at least 3 bullet points. Use the markdown bullet points such as: * This is point 1.\n- Highlight at least 2 sections in your answer with markdown, i.e. *highlighted section*.\n- In your response, the word *design* should appear at least 2 times.\n- Do not include keywords *layout* in the response.\n- Finish your response with this exact phrase *Is there anything else I can help with?* No other words should follow this phrase."
+    },
+    {
+      "name": "Your response should contain at least 3 bullet points. Use the markdown bullet points such as: * This is point 1.",
+      "minus_prompt": "What are the key features of a well-designed website?\n\n- There should be 2 paragraphs. Paragraphs are separated with the markdown divider: ***\n- Highlight at least 2 sections in your answer with markdown, i.e. *highlighted section*.\n- In your response, the word *design* should appear at least 2 times.\n- Do not include keywords *layout* in the response.\n- Finish your response with this exact phrase *Is there anything else I can help with?* No other words should follow this phrase."
+    },
+    {
+      "name": "Highlight at least 2 sections in your answer with markdown, i.e. *highlighted section*.",
+      "minus_prompt": "What are the key features of a well-designed website?\n\n- There should be 2 paragraphs. Paragraphs are separated with the markdown divider: ***\n- Your response should contain at least 3 bullet points. Use the markdown bullet points such as: * This is point 1.\n- In your response, the word *design* should appear at least 2 times.\n- Do not include keywords *layout* in the response.\n- Finish your response with this exact phrase *Is there anything else I can help with?* No other words should follow this phrase."
+    },
+    {
+      "name": "In your response, the word *design* should appear at least 2 times.",
+      "minus_prompt": "What are the key features of a well-designed website?\n\n- There should be 2 paragraphs. Paragraphs are separated with the markdown divider: ***\n- Your response should contain at least 3 bullet points. Use the markdown bullet points such as: * This is point 1.\n- Highlight at least 2 sections in your answer with markdown, i.e. *highlighted section*.\n- Do not include keywords *layout* in the response.\n- Finish your response with this exact phrase *Is there anything else I can help with?* No other words should follow this phrase."
+    },
+    {
+      "name": "Do not include keywords *layout* in the response.",
+      "minus_prompt": "What are the key features of a well-designed website?\n\n- There should be 2 paragraphs. Paragraphs are separated with the markdown divider: ***\n- Your response should contain at least 3 bullet points. Use the markdown bullet points such as: * This is point 1.\n- Highlight at least 2 sections in your answer with markdown, i.e. *highlighted section*.\n- In your response, the word *design* should appear at least 2 times.\n- Finish your response with this exact phrase *Is there anything else I can help with?* No other words should follow this phrase."
+    },
+    {
+      "name": "Finish your response with this exact phrase *Is there anything else I can help with?* No other words should follow this phrase.",
+      "minus_prompt": "What are the key features of a well-designed website?\n\n- There should be 2 paragraphs. Paragraphs are separated with the markdown divider: ***\n- Your response should contain at least 3 bullet points. Use the markdown bullet points such as: * This is point 1.\n- Highlight at least 2 sections in your answer with markdown, i.e. *highlighted section*.\n- In your response, the word *design* should appear at least 2 times.\n- Do not include keywords *layout* in the response."
+    }
+  ],
+  "responses": [
+    "A well-designed website is *easy to navigate* and quick to load. Good design puts the visitor's goal first:\n* Clear menus and a visible search box\n* Fast pages that work on phones and desktops\n* Readable text with enough contrast\n***\nIt also stays *consistent from page to page*, so the design never surprises the visitor, and it is accessible to people who use screen readers or keyboards. Is there anything else I can help with?"
+  ]
+}

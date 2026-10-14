@@ -1,0 +1,32 @@
+{
+  "name": "Text-to-SQL: Spider train, department_management",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Task Overview:\nYou are a data science expert. Below, you are provided with a database schema and a natural language question. Your task is to understand the schema and generate a valid SQL query to answer the question.\n\nDatabase Engine:\nSQLite\n\nDatabase Schema:\nCREATE TABLE department (\n    Department_ID number, -- example: [1, 2]\n    Name text, -- example: ['State', 'Treasury']\n    Creation text, -- example: ['1789', '1947']\n    Ranking number, -- example: [1, 2]\n    Budget_in_Billions number, -- example: [9.96, 11.1]\n    Num_Employees number, -- example: [30266.0, 115897.0]\n    PRIMARY KEY (Department_ID)\n);\n\nCREATE TABLE head (\n    head_ID number, -- example: [1, 2]\n    name text, -- example: ['Tiger Woods', 'Sergio García']\n    born_state text, -- example: ['Alabama', 'California']\n    age number, -- example: [67.0, 68.0]\n    PRIMARY KEY (head_ID)\n);\n\nCREATE TABLE management (\n    department_ID number, -- example: [2, 7]\n    head_ID number, -- example: [5, 6]\n    temporary_acting text, -- example: ['Yes', 'No']\n    PRIMARY KEY (department_ID),\n    CONSTRAINT fk_management_department_id FOREIGN KEY (department_ID) REFERENCES department (Department_ID),\n    CONSTRAINT fk_management_head_id FOREIGN KEY (head_ID) REFERENCES head (head_ID)\n);\nThis schema describes the database's structure, including tables, columns, primary keys, foreign keys, and any relevant relationships or constraints.\n\nQuestion:\nHow many heads of the departments are older than 56 ?\n\nInstructions:\n- Make sure you only output the information that is asked in the question. If the question asks for a specific column, make sure to only include that column in the SELECT clause, nothing more.\n- The generated query should return all of the information asked in the question without any missing or extra information.\n- Before generating the final SQL query, please think through the steps of how to write the query.\n- Note that while the reasoning process and SQL query need to be enclosed within <think> </think> and <answer> </answer> tags respectively, this should not affect the quality of the SQL generation.\n- The answer must contain the SQL query within ```sql ``` tags.\n\nOutput Format:\nPut your reasoning inside <think> </think> tags and your answer inside <answer> </answer> tags, with the final SQL query in a ```sql code block inside <answer>:\n<think>\n...\n</think>\n<answer>\n```sql\n-- Your SQL query\n```\n</answer>\n\nTake a deep breath and think step by step to find the correct SQL query.\n"
+    }
+  ],
+  "rewards": [
+    {
+      "name": "format",
+      "block": "For the final user request, respond in this form:\n\n<think>...</think>\n<answer>\n```sql\n...\n```\n</answer>\n\nUse exactly one <think> block followed by exactly one <answer> block, and put the final SQL query in a ```sql code block inside <answer>."
+    },
+    {
+      "name": "executable",
+      "block": "When this query was executed on this database, SQLite raised: `no such column: head_age`."
+    },
+    {
+      "name": "correct",
+      "block": "The reference query for this question is: `SELECT count(*) FROM head WHERE age  >  56`."
+    }
+  ],
+  "responses": [
+    "<think>\nCount the heads older than 56.\n</think>\n<answer>\n```sql\nSELECT count(*) FROM head WHERE head_age > 56\n```\n</answer>",
+    {
+      "text": "<think>\nCount the heads older than 56.\n</think>\n<answer>\n```sql\nSELECT count(*) FROM head WHERE age > 56\n```\n</answer>",
+      "blocks": {
+        "executable": ""
+      }
+    }
+  ]
+}

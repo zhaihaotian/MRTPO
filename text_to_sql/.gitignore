@@ -1,0 +1,6 @@
+data/raw/
+data/datasets/
+data/parquet/
+outputs/
+eval/
+__pycache__/

@@ -1,0 +1,26 @@
+{
+  "name": "Tool calling: RLLA train row 3220",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful multi-turn dialogue assistant capable of leveraging tool calls to solve user tasks and provide structured chat responses.\n\n**Available Tools**\nIn your response, you can use the following tools:\n1. Name: generate_quiz\nDescription: Generate a quiz based on a specific topic\nParameters: {\"topic\": {\"description\": \"The topic of the quiz\", \"type\": \"string\", \"default\": \"\"}, \"number_of_questions\": {\"description\": \"The number of questions in the quiz\", \"type\": \"int\", \"default\": \"\"}}\n\n**Steps for Each Turn**\n1. **Think:** Recall relevant context and analyze the current user goal.\n2. **Decide on Tool Usage:** If a tool is needed, specify the tool and its parameters.\n3. **Respond Appropriately:** If a response is needed, generate one while maintaining consistency across user queries.\n\n**Output Format**\n```plaintext\n<think> Your thoughts and reasoning </think>\n<tool_call>\n{\"name\": \"Tool name\", \"parameters\": {\"Parameter name\": \"Parameter content\", \"... ...\": \"... ...\"}}\n{\"name\": \"... ...\", \"parameters\": {\"... ...\": \"... ...\", \"... ...\": \"... ...\"}}\n...\n</tool_call>\n<response> AI's final response </response>\n```\n\n**Important Notes**\n1. You must always include the `<think>` field to outline your reasoning. Provide at least one of `<tool_call>` or `<response>`. Decide whether to use `<tool_call>` (possibly multiple times), `<response>`, or both.\n2. You can invoke multiple tool calls simultaneously in the `<tool_call>` fields. Each tool call should be a JSON object with a \"name\" field and an \"parameters\" field containing a dictionary of parameters. If no parameters are needed, leave the \"parameters\" field an empty dictionary.\n3. Refer to the previous dialogue records in the history, including the user's queries, previous `<tool_call>`, `<response>`, and any tool feedback noted as `<obs>` (if exists)."
+    },
+    {
+      "role": "user",
+      "content": "**Dialogue Records History**\n<user> I need a quick quiz on World History for my students to take tomorrow. Can it have 10 questions? </user>"
+    }
+  ],
+  "rewards": [
+    {
+      "name": "correctness",
+      "block": "The correctness reference for the final user request contains these ordered operation:\n1. Operation name: `generate_quiz`.\n   Parameter `topic`: \"World History\".\n   Parameter `number_of_questions`: 10.\nThe operation order, names, parameter names, and parameter values above are the complete correctness reference."
+    },
+    {
+      "name": "format",
+      "block": "For the final user request, respond in this form:\n\n<think>...</think>\n<tool_call>\n...\n</tool_call>\n\nUse one <tool_call> block, place its content between the opening and closing tags on separate lines, and end the answer with </tool_call>. Do not add a <response> block."
+    }
+  ],
+  "responses": [
+    "<think> I should use the appropriate tool with proper parameters to respond to the user's need. </think>\n<tool_call>\n{\"name\": \"generate_quiz\", \"parameters\": {\"topic\": \"World History\", \"number_of_questions\": \"10\"}}\n</tool_call>"
+  ]
+}
