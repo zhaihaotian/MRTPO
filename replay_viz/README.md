@@ -124,7 +124,7 @@ for the whole page, from white (0) to full colour (the largest q on the page); h
 tokens are the positions whose next-token distribution depends most on the reward's information, and they receive
 the largest share of that reward's advantage.
 
-The weights do not always land where one expects. Often a large share falls on the reasoning or thinking part of the
+The weights do not always land where one expects. Sometimes a large share falls on the reasoning or thinking part of the
 response rather than on the final answer, as in on-policy self-distillation: the information changes how the model
 reasons on the way to the answer, not only the answer tokens. One response can mislead, so look at several sampled
 responses before deciding how to write a block.

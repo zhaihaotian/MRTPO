@@ -131,10 +131,19 @@ MRTPO needs two things from a task:
 
 1. **A vector of rewards**, each scored by its own verifier, as in GDPO.
 2. **For every reward, a text block that carries the information its verifier uses.** The two replay contexts differ
-   only in this block, so the block decides which tokens receive the reward's advantage. There are two ways to get it:
-   - *add* information the verifier holds but the prompt does not show: the reference calls (tool calling), the
-     reference query or the response's own SQLite error (text-to-SQL);
-   - *remove* information the prompt already shows: one constraint of the instruction (instruction following).
+   only in this block, so the block decides which tokens receive the reward's advantage.
+
+Whatever the task, the replay compares two contexts for each reward k: **P_all**, which contains the blocks of all
+rewards, and **P_\k**, the same context with block k removed. Where the blocks come from depends on whether the rollout
+prompt already shows the verifier information:
+
+- **The prompt does not show it** (tool calling, text-to-SQL). The verifier holds information the policy never sees
+  while sampling: the reference calls, the reference query, the response's own SQLite error. We write each piece as a
+  block and append the blocks to the rollout prompt P_0, so P_all = P_0 + all blocks and P_\k = P_0 + all blocks
+  except block k. The rollout itself still uses P_0.
+- **The prompt already shows it** (instruction following). Every constraint the verifiers check is part of the
+  instruction, so the rollout prompt is already P_all. Nothing is added; P_\k is the rollout prompt with constraint k
+  deleted.
 
 The blocks of the three settings:
 
@@ -149,22 +158,41 @@ The blocks of the three settings:
 
 How we write a block:
 
-- **The rollout prompt does not change.** Blocks appear only in the replay contexts. Added blocks go at the end of the
-  user message, after a blank line and in a fixed order; the system message is unchanged.
-- **State only what the verifier reads, in plain sentences.** A block is a statement of the information, written like
-  the rest of the prompt. Leave out labels such as "grading note", remarks about training or scoring, and separator
-  lines.
+- **One reward, one block.** Each constraint, rubric item or verifier gets its own block; never merge several into one.
+  The main contrast is always leave-one-out: P_all against P_all without block k.
+- **Write the information itself, specific to this example.** Build every block by code from the example's label or
+  the verifier's own output: the actual tool names and argument values, the actual reference query, the actual error
+  message. A generic requirement ("the query must execute") carries no information about this response. Give only the
+  fields the verifier compares; do not copy the reasoning or the whole text of a reference answer.
+- **Write it as a plain statement, like the rest of the prompt.** No instructions to the model ("use this
+  information", "do not mention this"), no headings or introductions ("Verifier information for this problem"), no
+  labels ("Grading note"), no words about training, replay, scoring or what counts as success, and no separator lines.
+  When the information is something to avoid, say so directly (an injected instruction "should not be followed"), not
+  only what would happen if it were followed.
+- **Use only this response's own feedback.** A block that depends on the response, such as an execution error, quotes
+  the error of this response, not of other responses in the group. If there is none, the block is empty; never invent
+  one. An empty block leaves that reward with uniform token weights on this response.
 - **Write references in the form the policy is asked to produce.** Argument values follow the types of the tool
   schema, and a reference answer uses the same tags and code fences as the required output.
-- **Keep the visible output format equal to what the format reward checks**, so the format block and the prompt agree.
-- **A block may be empty for a response**, such as the executable block of a query that ran. That reward then keeps
-  uniform token weights on this response.
+- **Keep the prompt, the rewards and the blocks consistent.** The output format shown in the prompt is exactly what the
+  format reward checks, under the same chat template and thinking mode used for training, and no block contradicts the
+  prompt or the reward. Do not reuse a template from another task (for example a math `\boxed{}` instruction in a SQL
+  prompt).
+- **Keep the rollout prompt and the response as sampled.** P_0 is the training prompt exactly as the policy saw it
+  (system message, chat template, any truncation). Added blocks go at the end of the user message, after a blank line,
+  in a fixed order; the system message is unchanged. The response is replayed with its sampled token ids; never decode
+  and re-tokenize it.
+- **Do not make up references.** Blocks come from the data and the verifiers only; no synthetic wrong answers or
+  references taken from other rollouts.
 - **A reward may also keep GDPO's uniform weights altogether.** Some rewards carry no information that a replay can
   place on particular tokens, such as a word count or "answer in at most three sentences", which the response decides
   as a whole. Our code does not single these out and has no switch for it: in the instruction-following runs every
   constraint is replayed. On your own data you can mark such rewards (by type, or with a simple classifier over their
   text) and skip their reallocation, so they are spread over the tokens as in GDPO.
-- **Replay the exact sampled token ids** under both contexts; never decode and re-tokenize the response.
+
+Before training, sample real rollouts with the real P_0, print the rendered contexts of every kind of example (each
+response form, empty and non-empty blocks), check that block k belongs to reward k, and run the format reward on every
+reference answer you show. Then look at the token weights with [`replay_viz/`](./replay_viz) (below).
 
 The blocks of each setting are built in
 [`verl_mrtpo/mrtpo/sql/constructions.py`](./verl_mrtpo/mrtpo/sql/constructions.py) and
@@ -187,8 +215,8 @@ short training, MRTPO without the bound also works well (`--no-reallocation-boun
 
 **Check the replay before training.** [`replay_viz/`](./replay_viz) replays responses of the base model zero-shot under
 your blocks and draws each reward's token weights, as in the example figures of the paper. If you are unsure whether a
-block works, look at a few responses there first. The weights do not always land where one expects: as in on-policy
-self-distillation, a large share often falls on the reasoning part of the response.
+block works, look at a few responses there first. The weights do not always land where one expects: sometimes, as in
+on-policy self-distillation, a large share falls on the reasoning part of the response.
 
 ## 🙏 Acknowledgements
 
