@@ -1,6 +1,10 @@
 # Each Reward to Its Relevant Tokens: Reward-Specific Token-Level Credit Assignment for Multi-Reward RL
 
 <p align="center">
+📄 <a href="https://arxiv.org/abs/2610.21439">Paper</a> &nbsp;|&nbsp; 🌐 <a href="https://zhaihaotian.github.io/MRTPO/">Project page</a> &nbsp;|&nbsp; 🤗 <a href="https://huggingface.co/papers/2610.21439">Hugging Face</a>
+</p>
+
+<p align="center">
 🧩 <a href="./instruction_following">Instruction following</a> &nbsp;|&nbsp; 🗄️ <a href="./text_to_sql">Text-to-SQL</a> &nbsp;|&nbsp; 🛠️ <a href="./tool_calling">Tool calling</a>
 </p>
 
@@ -217,6 +221,19 @@ short training, MRTPO without the bound also works well (`--no-reallocation-boun
 your blocks and draws each reward's token weights, as in the example figures of the paper. If you are unsure whether a
 block works, look at a few responses there first. The weights do not always land where one expects: sometimes, as in
 on-policy self-distillation, a large share falls on the reasoning part of the response.
+
+## 📝 Citation
+
+```bibtex
+@article{zhai2026mrtpo,
+  title   = {Each Reward to Its Relevant Tokens: Reward-Specific Token-Level
+             Credit Assignment for Multi-Reward {RL}},
+  author  = {Zhai, Skylar and Wang, Haonan and Liu, Zhining and Song, Linxin and
+             Ding, Xuwei and Liang, Jingcheng and Kang, Jian},
+  journal = {arXiv preprint arXiv:2610.21439},
+  year    = {2026}
+}
+```
 
 ## 🙏 Acknowledgements
 
