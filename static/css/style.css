@@ -52,11 +52,12 @@ code { font-family: var(--mono); font-size: .9em; background: #f1efe9; padding: 
 .authors a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; text-decoration-thickness: 1px; }
 .affils { margin-top: 8px; font-size: 14px; color: var(--ink-3); line-height: 1.7; }
 .affils span { display: inline-block; margin-right: 16px; }
-.links { margin-top: 26px; }
+.links { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 10px; }
 .btn {
   display: inline-flex; align-items: center; gap: 9px; padding: 9px 18px; border-radius: 8px;
   background: var(--ink); color: #fff; font-weight: 500; font-size: 15px; text-decoration: none;
 }
+.btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--line-2); }
 .btn svg { width: 17px; height: 17px; }
 
 .tldr {
